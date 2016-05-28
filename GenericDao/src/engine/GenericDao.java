@@ -1,21 +1,18 @@
-package model.dao.engine;
+package engine;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.mysql.jdbc.Statement;
 
-import Utils.CheckedFunction;
-import Utils.Tuple;
-import databasemanager.SqlConnector;
-import exceptions.PiplException;
 import model.BaseEntity;
+import utils.Tuple;
 
 /**
  * 
@@ -24,7 +21,7 @@ import model.BaseEntity;
  * @param <T>
  */
 
-public abstract class GenericDao<T extends BaseEntity> implements CheckedFunction<ResultSet, Integer, ArrayList<T>> {
+public abstract class GenericDao<T extends BaseEntity>{
 
 	private static final int SLECT_COUNT = 1;
 	private static final int INSERT = 2;
@@ -48,7 +45,7 @@ public abstract class GenericDao<T extends BaseEntity> implements CheckedFunctio
 	private String insertStmntStr;
 	private String updateStmntStr;
 
-	public GenericDao(Class<T> classType) throws PiplException {
+	public GenericDao(Class<T> classType) throws Exception {
 		this.classType = classType;
 		Constructor<T>[] constructors = (Constructor<T>[]) classType.getConstructors();
 		int constructorLength = constructors.length;
@@ -60,7 +57,7 @@ public abstract class GenericDao<T extends BaseEntity> implements CheckedFunctio
 		}
 
 		if (mDeserializer == null)
-			throw new PiplException("Entity does not support GenericDao. No Deserilizer constructor found");
+			throw new Exception("Entity does not support GenericDao. No Deserilizer constructor found");
 		
 		mStmntCache = new HashMap<Integer, java.sql.PreparedStatement>(8);
 
@@ -265,14 +262,5 @@ public abstract class GenericDao<T extends BaseEntity> implements CheckedFunctio
 		ResultSet rs = preparedStmt.executeQuery();
 		rs.next();
 		return rs.getInt(1);
-	}
-
-	// The following function is being used by the @{code
-	// SQLPager.mResultSetParserFunc}. We need it in order to escalate
-	// exceptions from this
-	// class if it's being used as Java 8 lambdas.
-	@Override
-	public ArrayList<T> apply(ResultSet t, Integer maxResult) throws Exception {
-		return buildEntities(t, maxResult);
 	}
 }
