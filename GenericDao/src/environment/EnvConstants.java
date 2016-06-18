@@ -11,8 +11,8 @@ public class EnvConstants {
 	}
 
 	public static final String DATABASE = "genericdao_db";
-	public static final String LOCAL_USER = "genericdao";
-	public static final String LOCAL_PASSWORD = "*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9";
+	public static final String LOCAL_USER = "";
+	public static final String LOCAL_PASSWORD = "";
 	public static final String LOCAL_HOST = "localhost";
 
 	public static final String REMOTE_USER = "";
