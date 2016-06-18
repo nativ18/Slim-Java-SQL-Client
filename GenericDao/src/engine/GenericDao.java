@@ -7,11 +7,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import com.amazonaws.services.lambda.runtime.Context;
 
 import model.BaseEntity;
+import utils.CheckedParam;
 import utils.Tuple;
 
 /**
@@ -21,7 +24,7 @@ import utils.Tuple;
  * @param <T>
  */
 
-public abstract class GenericDao<T extends BaseEntity>{
+public abstract class GenericDao<T extends BaseEntity> {
 
 	private static final int SLECT_COUNT = 1;
 	private static final int INSERT = 2;
@@ -34,10 +37,10 @@ public abstract class GenericDao<T extends BaseEntity>{
 	private static final int DELETE_FOR_INDEX = 200;
 
 	private Class<T> classType;
-	private ArrayList<Field> mFields;
+	protected ArrayList<Field> mFields;
 	private ArrayList<String> mSqlColumns;
 	private Constructor<T> mDeserializer;
-	
+
 	protected HashMap<Integer, java.sql.PreparedStatement> mStmntCache;
 
 	protected abstract String getTableName();
@@ -58,7 +61,7 @@ public abstract class GenericDao<T extends BaseEntity>{
 
 		if (mDeserializer == null)
 			throw new Exception("Entity does not support GenericDao. No Deserilizer constructor found");
-		
+
 		mStmntCache = new HashMap<Integer, java.sql.PreparedStatement>(8);
 
 		Field[] fields = classType.getDeclaredFields();
@@ -86,7 +89,11 @@ public abstract class GenericDao<T extends BaseEntity>{
 		java.sql.PreparedStatement preparedStmt = mStmntCache.get(stmntIndex);
 		if (preparedStmt == null) {
 			Connection connection = SqlConnector.getInstance(context).getRestoreConnection();
-			preparedStmt = connection.prepareStatement(statement);
+			if (stmntIndex == INSERT)
+				preparedStmt = connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS);
+			else
+				preparedStmt = connection.prepareStatement(statement);
+
 			mStmntCache.put(stmntIndex, preparedStmt);
 		}
 		return preparedStmt;
@@ -112,15 +119,22 @@ public abstract class GenericDao<T extends BaseEntity>{
 			return null;
 	}
 
-	public ArrayList<T> selectForIndex(Context context, String string, long id) throws Exception {
-		return selectForIndex(context, string, id, -1);
+	public ArrayList<T> selectForIndex(Context context, String string, Object val) throws Exception {
+		return selectForIndex(context, string, val, -1);
 	}
 
-	public ArrayList<T> selectForIndex(Context context, String string, long id, int maxResults) throws Exception {
-		java.sql.PreparedStatement preparedStmt = getOrSet(context, (int) (SELECT_FOR_INDEX + string.hashCode() + id),
-				String.format("select * from %s where %s=? limit %s;", getTableName(), string, maxResults));
+	public ArrayList<T> selectForIndex(Context context, String string, Object val, int maxResults) throws Exception {
+		int suffix = val.hashCode();
+		String stmnt;
+		if (maxResults == -1) {
+			stmnt = String.format("select * from %s where %s=?;", getTableName(), string);
+		} else
+			stmnt = String.format("select * from %s where %s=? limit %s;", getTableName(), string, maxResults);
 
-		preparedStmt.setLong(1, id);
+		java.sql.PreparedStatement preparedStmt = getOrSet(context,
+				(int) (SELECT_FOR_INDEX + string.hashCode() + suffix), stmnt);
+
+		preparedStmt.setObject(1, val);
 		ResultSet rs = preparedStmt.executeQuery();
 		return buildEntities(rs, -1);
 	}
@@ -142,21 +156,56 @@ public abstract class GenericDao<T extends BaseEntity>{
 		return rs.getInt(1);
 	}
 
-	private String initInsertStmnt(T t) {
+	public Tuple<Integer, PreparedStatement> update(Context context, T t) throws Exception {
+		java.sql.PreparedStatement preparedStmt = getOrSet(context, UPDATE, initUpdateStmnt(t));
+		bindColumns(preparedStmt, t);
+		preparedStmt.setLong(mFields.size(), t.getId());
+		int rowsAffected = preparedStmt.executeUpdate();
+		return new Tuple<Integer, PreparedStatement>(rowsAffected, preparedStmt);
+	}
+
+	protected String initUpdateStmnt(T t, String... fieldsToRemove) {
+		if (this.updateStmntStr == null) {
+			StringBuilder builder = new StringBuilder(String.format("update %s set ", getTableName()));
+
+			ArrayList<String> list = new ArrayList<String>(mSqlColumns);
+			if (fieldsToRemove != null && fieldsToRemove.length > 0) {
+				List<String> toRemove = Arrays.asList(fieldsToRemove);
+				list.removeAll(toRemove);
+			}
+
+			for (int i = 1; i < list.size(); i++) {
+				builder.append(list.get(i)).append("=?").append(i == list.size() - 1 ? "" : ",");
+			}
+			builder.append(" where id = ?;");
+
+			updateStmntStr = builder.toString();
+		}
+		return updateStmntStr;
+	}
+
+	protected String initInsertStmnt(T t, String... fieldsToRemove) {
 		if (this.insertStmntStr == null) {
 			StringBuilder builder = new StringBuilder(String.format("insert into %s (", getTableName()));
 			StringBuilder questionMarks = new StringBuilder();
 
-			for (int i = 0; i < mSqlColumns.size() - 1; i++) { // -1 because
-																	// we
-																	// don't
-																	// want to
-																	// insert an
-																	// id.
+			List<String> toRemove = null;
+			int numFieldsToRemove = 0;
+			if (fieldsToRemove != null) {
+				toRemove = Arrays.asList(fieldsToRemove);
+				numFieldsToRemove = fieldsToRemove.length;
+			}
+
+			for (int i = 0; i < mSqlColumns.size() - numFieldsToRemove - 1; i++) { // -1
+				// because
+				// we don't want to insert an id.
 				questionMarks.append(i == 0 ? "?" : ",?");
 			}
 
 			ArrayList<String> list = new ArrayList<String>(mSqlColumns);
+			if (toRemove != null && !toRemove.isEmpty())
+				list.removeAll(toRemove);
+
 			list.remove("id");
 			String columns = list.toString();
 			builder.append(columns.substring(1, columns.length() - 1));
@@ -166,53 +215,42 @@ public abstract class GenericDao<T extends BaseEntity>{
 		return insertStmntStr;
 	}
 
-	public void update(Context context, T t) throws Exception {
-		java.sql.PreparedStatement preparedStmt = getOrSet(context, UPDATE, initUpdateStmnt(t));
-		bindColumns(preparedStmt, t);
-		preparedStmt.setLong(mFields.size(), t.getId());
-		preparedStmt.executeUpdate();
-	}
-
-	private String initUpdateStmnt(T t) {
-		if (this.updateStmntStr == null) {
-			StringBuilder builder = new StringBuilder(String.format("update %s set ", getTableName()));
-
-			for (int i = 1; i < mSqlColumns.size(); i++) {
-				builder.append(mSqlColumns.get(i)).append("=?").append(i == mSqlColumns.size() - 1 ? "" : ",");
-			}
-			builder.append(" where id = ?;");
-
-			updateStmntStr = builder.toString();
-		}
-		return updateStmntStr;
-	}
-
 	public Tuple<Integer, PreparedStatement> insert(Context context, T t) throws Exception {
-		java.sql.PreparedStatement preparedStmt = mStmntCache.get(INSERT);
-		if (preparedStmt == null) {
-			Connection connection = SqlConnector.getInstance(context).getRestoreConnection();
-			preparedStmt = connection.prepareStatement(initInsertStmnt(t), Statement.RETURN_GENERATED_KEYS);
-			mStmntCache.put(INSERT, preparedStmt);
-		}
-
+		java.sql.PreparedStatement preparedStmt = getOrSet(context, INSERT, initInsertStmnt(t));
 		bindColumns(preparedStmt, t);
 		int rowsAffected = preparedStmt.executeUpdate();
 		return new Tuple<Integer, PreparedStatement>(rowsAffected, preparedStmt);
 	}
 
-	public void bindColumns(java.sql.PreparedStatement preparedStatement, T t) throws Exception {
+	public void bindColumns(java.sql.PreparedStatement preparedStatement, T t, String... ignoreFileds)
+			throws Exception {
 		String methodName;
 		String fieldName;
-		for (int i = 0; i < mFields.size(); i++) {
+		List<String> toIgnore = ignoreFileds == null ? new ArrayList<String>(0) : Arrays.asList(ignoreFileds);
+		for (int i = 0; i < mFields.size() - toIgnore.size(); i++) {
 			fieldName = mFields.get(i).getName();
-			if (fieldName.equals("id")) // we use the bindColumns only for
-										// insert for now and for insert we
-										// never wants to assign a id ourselves.
+			// we use the bindColumns only for insert for now and for insert we
+			// never wants to assign a id ourselves.
+			if (fieldName.equals("id") || toIgnore.contains(fieldName))
 				continue;
 
 			methodName = String.format("get%s%s", fieldName.substring(0, 1).toUpperCase(), fieldName.substring(1));
 			preparedStatement.setObject(i, classType.getMethod(methodName).invoke(t));
 		}
+	}
+
+	public ArrayList<T> buildEntities(CheckedParam params) {
+		try {
+			return buildEntities(params.getResultSet(), -1);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public ArrayList<T> buildEntities(ResultSet rs) throws Exception {
+		return buildEntities(rs, -1);
 	}
 
 	public ArrayList<T> buildEntities(ResultSet rs, int maxResults) throws Exception {
@@ -230,6 +268,10 @@ public abstract class GenericDao<T extends BaseEntity>{
 		return entites;
 	}
 
+	public T buildEntity(CheckedParam param) throws Exception {
+		return buildEntity(param.getResultSet());
+	}
+
 	public T buildEntity(ResultSet rs) throws Exception {
 
 		ArrayList<Object> parmas = new ArrayList<Object>();
@@ -242,11 +284,11 @@ public abstract class GenericDao<T extends BaseEntity>{
 		return mDeserializer.newInstance(parmas.toArray());
 	}
 
-	public int getCountForColumn(Context context, String fkName, long userId) throws Exception {
+	public int getCountForColumn(Context context, String indexName, Object indexVal) throws Exception {
 		java.sql.PreparedStatement preparedStmt = getOrSet(context, SLECT_COUNT_WHERE,
-				String.format("select count(*) from %s where %s=?;", getTableName(), fkName));
+				String.format("select count(*) from %s where %s=?;", getTableName(), indexName));
 
-		preparedStmt.setObject(1, userId);
+		preparedStmt.setObject(1, indexVal);
 		ResultSet rs = preparedStmt.executeQuery();
 		rs.next();
 		return rs.getInt(1);

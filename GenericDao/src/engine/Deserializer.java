@@ -5,5 +5,5 @@ import java.lang.annotation.Retention;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Deserializer {
-	boolean isDeserializer();
+
 }

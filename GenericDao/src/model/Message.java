@@ -6,85 +6,100 @@ import engine.SqlBinder;
 /**
  * An example class for creating a annotation based entity that generic Dao can
  * manage.
- * 
+ *
  * @author nativ
  */
-public class Message extends BaseEntity{
+public class Message extends BaseEntity {
 
-	@SqlBinder(val = "content")
-	private String content;
-	@SqlBinder(val = "message_type")
-	private Integer messageType;
-	@SqlBinder(val = "image_url")
-	private String imageUrl;
-	@SqlBinder(val = "likes")
-	private Integer likes;
-	@SqlBinder(val = "date_created")
-	private Long creationDate;
+    @SqlBinder(val = "content")
+    private String content;
+    @SqlBinder(val = "owner_id")
+    private long ownerId;
+    @SqlBinder(val = "message_type")
+    private int messageType;
+    @SqlBinder(val = "image_url")
+    private String imageUrl;
+    @SqlBinder(val = "likes")
+    private int likes;
+    @SqlBinder(val = "date_created")
+    private long creationDate;
 
-	@Deserializer(isDeserializer = true)
-	public Message(long id, String content, Integer messageType, String imageUrl, Integer likes, Long creationDate) {
-		super(id);
-		this.content = content;
-		this.messageType = messageType;
-		this.imageUrl = imageUrl;
-		this.likes = likes;
-		this.creationDate = creationDate;
-	}
+    @Deserializer
+    public Message(long id, long ownerId, String content, Integer messageType, String imageUrl, Integer likes, Long creationDate) {
+        super(id);
+        this.ownerId = ownerId;
+        this.content = content;
+        this.messageType = messageType;
+        this.imageUrl = imageUrl;
+        this.likes = likes;
+        this.creationDate = creationDate;
+    }
 
-	public Message() {
-	}
+    public Message() {
+    }
 
-	public Long getCreationDate() {
-		return creationDate;
-	}
+    public long getOwnerId() {
+        return ownerId;
+    }
 
-	public void setCreationDate(long creationDate) {
-		this.creationDate = creationDate;
-	}
+    public int getLikes() {
+        return likes;
+    }
 
-	public void setMessageType(Integer messageType) {
-		this.messageType = messageType;
-	}
+    public void setOwnerId(long ownerId) {
+        this.ownerId = ownerId;
+    }
 
-	public void setUpvoteCount(Integer upvoteCount) {
-		this.likes = upvoteCount;
-	}
+    public Long getCreationDate() {
+        return creationDate;
+    }
 
-	public void setCreationDate(Long creationDate) {
-		this.creationDate = creationDate;
-	}
+    public void setCreationDate(long creationDate) {
+        this.creationDate = creationDate;
+    }
 
-	public String getContent() {
-		return content;
-	}
+    public void setMessageType(Integer messageType) {
+        this.messageType = messageType;
+    }
 
-	public void setContent(String content) {
-		this.content = content;
-	}
+    public void setUpvoteCount(Integer upvoteCount) {
+        this.likes = upvoteCount;
+    }
 
-	public int getMessageType() {
-		return messageType;
-	}
+    public void setCreationDate(Long creationDate) {
+        this.creationDate = creationDate;
+    }
 
-	public void setMessageType(int messageType) {
-		this.messageType = messageType;
-	}
+    public String getContent() {
+        return content;
+    }
 
-	public String getImageUrl() {
-		return imageUrl;
-	}
+    public void setContent(String content) {
+        this.content = content;
+    }
 
-	public void setImageUrl(String imageUrl) {
-		this.imageUrl = imageUrl;
-	}
+    public int getMessageType() {
+        return messageType;
+    }
 
-	public int getUpvoteCount() {
-		return likes;
-	}
+    public void setMessageType(int messageType) {
+        this.messageType = messageType;
+    }
 
-	public void setUpvoteCount(int upvoteCount) {
-		this.likes = upvoteCount;
-	}
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public int getUpvoteCount() {
+        return likes;
+    }
+
+    public void setUpvoteCount(int upvoteCount) {
+        this.likes = upvoteCount;
+    }
 
 }
