@@ -114,7 +114,7 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 			hasMorePages = entities != null && !entities.isEmpty() && count > 0;
 		} else if (paginationParams.isGetNewResultsForIdRequest()) {
 			entities = getNewResultsForId(tableName, indexName, paginationParams.getIndexValue(),
-					paginationParams.getHeighestVisibleId());
+					paginationParams.getHeighestThen());
 			count = genericDao.getCountForColumn(mContext, indexName, paginationParams.getIndexValue());
 			hasMorePages = false;
 		}

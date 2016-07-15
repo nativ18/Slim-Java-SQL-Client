@@ -33,12 +33,12 @@ public class PaginationParams {
 		return loadMoreId != DEFAULT_HEIGHEST_ID && heighestVisibleId == DEFAULT_HEIGHEST_ID;
 	}
 
-	public long getHeighestVisibleId() {
+	public long getHeighestThen() {
 		return heighestVisibleId;
 	}
 
-	public void setHeighestVisibleId(long heighestVisibleId) {
-		this.heighestVisibleId = heighestVisibleId;
+	public void setHeighestThen(long value) {
+		this.heighestVisibleId = value;
 	}
 
 	public long getLoadMoreId() {

@@ -95,7 +95,7 @@ public class Main {
 	public static String getOnlyNewOrdersPage(long customerId, long fromId) throws Exception {
 		OrdersDao OrdersDao = new OrdersDao();
 		PaginationParams paginationParams = new PaginationParams();
-		paginationParams.setHeighestVisibleId(fromId);
+		paginationParams.setHeighestThen(fromId);
 		paginationParams.setIndexValue(customerId);
 		OrdersSQLPager OrderssSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
 		return OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
@@ -109,8 +109,8 @@ public class Main {
 		OrdersDao OrdersDao = new OrdersDao();
 		PaginationParams paginationParams = new PaginationParams();
 		paginationParams.setIndexValue(customerId);
-		OrdersSQLPager OrderssSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
-		return OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
+		OrdersSQLPager OrdersSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
+		return OrdersSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
 	}
 
 	private static void insertOrders(long customerId) throws Exception {
