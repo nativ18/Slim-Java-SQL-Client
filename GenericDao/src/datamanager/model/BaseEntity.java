@@ -1,4 +1,4 @@
-package model;
+package datamanager.model;
 
 import engine.SqlBinder;
 

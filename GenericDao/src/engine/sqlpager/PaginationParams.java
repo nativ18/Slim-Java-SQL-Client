@@ -6,7 +6,7 @@ public class PaginationParams {
 
 	private long loadMoreId = DEFAULT_HEIGHEST_ID;
 	private int pageIndex = (int) DEFAULT_HEIGHEST_ID;
-	private long userHeighestVisibleId = DEFAULT_HEIGHEST_ID;
+	private long heighestVisibleId = DEFAULT_HEIGHEST_ID;
 	private long extraIndexValue;
 	private String extraIndexName;
 
@@ -17,7 +17,7 @@ public class PaginationParams {
 
 	public boolean isGetFirstPageRequest() {
 		return pageIndex == 0 || pageIndex == DEFAULT_HEIGHEST_ID && loadMoreId == DEFAULT_HEIGHEST_ID
-				&& userHeighestVisibleId == DEFAULT_HEIGHEST_ID;
+				&& heighestVisibleId == DEFAULT_HEIGHEST_ID;
 	}
 
 	public boolean isGetPageByIndexRequest() {
@@ -26,19 +26,19 @@ public class PaginationParams {
 	}
 
 	public boolean isGetNewResultsForIdRequest() {
-		return loadMoreId == DEFAULT_HEIGHEST_ID && userHeighestVisibleId != DEFAULT_HEIGHEST_ID;
+		return loadMoreId == DEFAULT_HEIGHEST_ID && heighestVisibleId != DEFAULT_HEIGHEST_ID;
 	}
 
 	public boolean isLoadMoreRequest() {
-		return loadMoreId != DEFAULT_HEIGHEST_ID && userHeighestVisibleId == DEFAULT_HEIGHEST_ID;
+		return loadMoreId != DEFAULT_HEIGHEST_ID && heighestVisibleId == DEFAULT_HEIGHEST_ID;
 	}
 
-	public long getUserHeighestVisibleId() {
-		return userHeighestVisibleId;
+	public long getHeighestVisibleId() {
+		return heighestVisibleId;
 	}
 
-	public void setUserHeighestVisibleId(long userHeighestVisibleId) {
-		this.userHeighestVisibleId = userHeighestVisibleId;
+	public void setHeighestVisibleId(long heighestVisibleId) {
+		this.heighestVisibleId = heighestVisibleId;
 	}
 
 	public long getLoadMoreId() {

@@ -13,7 +13,7 @@ import java.util.List;
 
 import com.amazonaws.services.lambda.runtime.Context;
 
-import model.BaseEntity;
+import datamanager.model.BaseEntity;
 import utils.CheckedParam;
 import utils.Tuple;
 
@@ -24,7 +24,7 @@ import utils.Tuple;
  * @param <T>
  */
 
-public abstract class GenericDao<T extends BaseEntity> {
+public abstract class GenericDao<T extends BaseEntity> implements CheckedFunction<ResultSet, Integer, ArrayList<T>> {
 
 	private static final int SLECT_COUNT = 1;
 	private static final int INSERT = 2;
@@ -33,13 +33,22 @@ public abstract class GenericDao<T extends BaseEntity> {
 	private static final int SELECT_WHERE = 5;
 	private static final int SELECT_ALL = 6;
 	private static final int UPDATE = 7;
+	private static final int IS_EXISTS = 8;
 	private static final int SELECT_FOR_INDEX = 100;
 	private static final int DELETE_FOR_INDEX = 200;
 
+	/**
+	 * Next open cache key for custom statements
+	 */
+	private int mNextCacheKey = DELETE_FOR_INDEX + 1;
+
+	/**
+	 * Reflections fields. Generic by BaseEntity's type
+	 */
 	private Class<T> classType;
 	protected ArrayList<Field> mFields;
 	private ArrayList<String> mSqlColumns;
-	private Constructor<T> mDeserializer;
+	protected Constructor<T> mDeserializer;
 
 	protected HashMap<Integer, java.sql.PreparedStatement> mStmntCache;
 
@@ -85,6 +94,10 @@ public abstract class GenericDao<T extends BaseEntity> {
 		}
 	}
 
+	protected int requestCacheKey() {
+		return mNextCacheKey++;
+	}
+
 	protected java.sql.PreparedStatement getOrSet(Context context, int stmntIndex, String statement) throws Exception {
 		java.sql.PreparedStatement preparedStmt = mStmntCache.get(stmntIndex);
 		if (preparedStmt == null) {
@@ -97,6 +110,17 @@ public abstract class GenericDao<T extends BaseEntity> {
 			mStmntCache.put(stmntIndex, preparedStmt);
 		}
 		return preparedStmt;
+	}
+
+	public boolean isExists(Context context, long id) throws Exception {
+		java.sql.PreparedStatement preparedStmt = getOrSet(context, IS_EXISTS,
+				String.format("select count(*) from %s where id=?;", getTableName()));
+		preparedStmt.setLong(1, id);
+		ResultSet rs = preparedStmt.executeQuery();
+		if (rs.next())
+			return rs.getLong(1) > 0;
+		else
+			return false;
 	}
 
 	public ArrayList<T> selectAll(Context context) throws Exception {
@@ -139,12 +163,13 @@ public abstract class GenericDao<T extends BaseEntity> {
 		return buildEntities(rs, -1);
 	}
 
-	public void deleteForIndex(Context context, String string, long id) throws Exception {
+	public Tuple<Integer, PreparedStatement> deleteForIndex(Context context, String string, long id) throws Exception {
 		java.sql.PreparedStatement preparedStmt = getOrSet(context, (int) (DELETE_FOR_INDEX + string.hashCode() + id),
 				String.format("delete from %s where %s=?;", getTableName(), string));
 
 		preparedStmt.setLong(1, id);
-		preparedStmt.executeUpdate();
+		int rowsAffected = preparedStmt.executeUpdate();
+		return new Tuple<Integer, PreparedStatement>(rowsAffected, preparedStmt);
 	}
 
 	public int getCount(Context context) throws Exception {
@@ -196,9 +221,8 @@ public abstract class GenericDao<T extends BaseEntity> {
 				numFieldsToRemove = fieldsToRemove.length;
 			}
 
-			for (int i = 0; i < mSqlColumns.size() - numFieldsToRemove - 1; i++) { // -1
-				// because
-				// we don't want to insert an id.
+			for (int i = 0; i < mSqlColumns.size() - numFieldsToRemove - 1; i++) {
+				// -1 because we don't want to insert an id.
 				questionMarks.append(i == 0 ? "?" : ",?");
 			}
 
@@ -224,18 +248,23 @@ public abstract class GenericDao<T extends BaseEntity> {
 
 	public void bindColumns(java.sql.PreparedStatement preparedStatement, T t, String... ignoreFileds)
 			throws Exception {
+		int stmntNextParamIndex = 1;
 		String methodName;
 		String fieldName;
 		List<String> toIgnore = ignoreFileds == null ? new ArrayList<String>(0) : Arrays.asList(ignoreFileds);
-		for (int i = 0; i < mFields.size() - toIgnore.size(); i++) {
+		for (int i = 0; i < mFields.size(); i++) {
 			fieldName = mFields.get(i).getName();
+
+			String columnName = toIgnore != null && !toIgnore.isEmpty()
+					? mFields.get(i).getAnnotation(SqlBinder.class).val() : null;
 			// we use the bindColumns only for insert for now and for insert we
 			// never wants to assign a id ourselves.
-			if (fieldName.equals("id") || toIgnore.contains(fieldName))
+			if (fieldName.equals("id") || (columnName != null && toIgnore.contains(columnName)))
 				continue;
 
 			methodName = String.format("get%s%s", fieldName.substring(0, 1).toUpperCase(), fieldName.substring(1));
-			preparedStatement.setObject(i, classType.getMethod(methodName).invoke(t));
+			preparedStatement.setObject(stmntNextParamIndex, classType.getMethod(methodName).invoke(t));
+			stmntNextParamIndex++;
 		}
 	}
 
@@ -304,5 +333,14 @@ public abstract class GenericDao<T extends BaseEntity> {
 		ResultSet rs = preparedStmt.executeQuery();
 		rs.next();
 		return rs.getInt(1);
+	}
+
+	/**
+	 * The following function is being used by the
+	 * {@code SQLPager.mResultSetParserFunc} as an entities builder.
+	 **/
+	@Override
+	public ArrayList<T> apply(ResultSet t, Integer maxResult) throws Exception {
+		return buildEntities(t, maxResult);
 	}
 }

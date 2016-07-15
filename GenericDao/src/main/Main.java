@@ -1,111 +1,136 @@
 package main;
 
-import com.amazonaws.services.lambda.runtime.Context;
-import dao.MessagesDao;
-import dao.UserDao;
-import engine.sqlpager.MessagessSQLPager;
-import engine.sqlpager.PaginationParams;
-import model.Message;
-import model.User;
-import utils.TestContext;
-import utils.Tuple;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
+
+import datamanager.dao.CustomerDao;
+import datamanager.dao.OrdersDao;
+import datamanager.model.Customer;
+import datamanager.model.Order;
+import engine.sqlpager.OrdersSQLPager;
+import engine.sqlpager.PaginationParams;
+import utils.TestContext;
+import utils.Tuple;
 
 /**
  * Created by nativ on 6/18/16.
  */
 public class Main {
 
-    private static final int MESSAGES_COUNT = 100;
-    private static final int MIDDLE_MESSAGE_ID = 50;
+	private static final int PAGE_INDEX = 3;
+	private static final int ORDERS_COUNT = 100;
+	private static final int MIDDLE_ORDER_ID = 50;
+	private static final int FROM_ID = 98;
 
-    private static MessagesDao mMessageDao;
-    private static UserDao mUserDao;
-    private static TestContext mContext;
+	private static OrdersDao mOrdersDao;
+	private static CustomerDao mCustomerDao;
+	private static TestContext mContext;
 
-    public static void main(String[] arg) throws Exception {
-        mContext = new TestContext();
-        mUserDao = new UserDao();
-        mMessageDao = new MessagesDao();
+	public static void main(String[] arg) throws Exception {
+		mContext = new TestContext();
+		mCustomerDao = new CustomerDao();
+		mOrdersDao = new OrdersDao();
 
-        long userId = insertUser();
-        insertMessages(userId);
+		long customerId = insertcustomer();
 
+		/** inserts ORDERS_COUNT orders for customerId */
+		insertOrders(customerId);
 
-        getFirstMessagesPage();
-        getNextMessagesPageByLowestId();
-        getNextMessagesPageByPageIndex();
-        getOnlyNewMessagesPage();
-    }
+		/**
+		 * returns first page of orders
+		 */
+		getFirstOrdersPage(customerId);
 
+		/**
+		 * returns next page of orders as if the lowest id is MIDDLE_ORDER_ID
+		 */
+		getNextOrdersPageByLowestId(customerId);
 
-    /**
-     * @return - json of the next page of results, paginating by entity's id. e.g from 50 to 70 id.
-     * @throws Exception
-     */
-    public static String getNextMessagesPageByLowestId() throws Exception {
-        MessagesDao messagesDao = new MessagesDao();
-        PaginationParams paginationParams = new PaginationParams();
-        paginationParams.setLoadMoreId(MIDDLE_MESSAGE_ID);
-        MessagessSQLPager messagessSQLPager = new MessagessSQLPager(messagesDao::buildEntities, mContext);
-        return messagessSQLPager.getResults(paginationParams, messagesDao, messagesDao.getTableName(), "id");
-    }
+		/**
+		 * returns the PAGE_INDEX page from orders table
+		 */
+		getNextOrdersPageByPageIndex(customerId, PAGE_INDEX);
 
-    /**
-     * @return - json of the next page of results, paginating by page index.
-     * @throws Exception
-     */
-    public static String getNextMessagesPageByPageIndex() throws Exception {
-        MessagesDao messagesDao = new MessagesDao();
-        PaginationParams paginationParams = new PaginationParams();
-        paginationParams.setPageIndex(1);
-        MessagessSQLPager messagessSQLPager = new MessagessSQLPager(messagesDao::buildEntities, mContext);
-        return messagessSQLPager.getResults(paginationParams, messagesDao, messagesDao.getTableName(), "id");
-    }
+		/**
+		 * returns only new records. If the database was empty at the beginning
+		 * of the test the ids should be in the range of 0-100. So for
+		 * FROM_ID=98 this method returns json with orders 99 and 100.
+		 */
+		getOnlyNewOrdersPage(customerId, FROM_ID);
+	}
 
-    /**
-     * @return -  json of the new items, starting from MIDDLE_MESSAGE_ID.
-     * @throws Exception
-     */
-    public static String getOnlyNewMessagesPage() throws Exception {
-        MessagesDao messagesDao = new MessagesDao();
-        PaginationParams paginationParams = new PaginationParams();
-        paginationParams.setUserHeighestVisibleId(MIDDLE_MESSAGE_ID);
-        MessagessSQLPager messagessSQLPager = new MessagessSQLPager(messagesDao::buildEntities, mContext);
-        return messagessSQLPager.getResults(paginationParams, messagesDao, messagesDao.getTableName(), "id");
-    }
+	/**
+	 * @param customerId
+	 * @return - json of the next page of results, paginating by entity's id.
+	 *         e.g from 50 to 70 id.
+	 * @throws Exception
+	 */
+	public static String getNextOrdersPageByLowestId(long customerId) throws Exception {
+		OrdersDao OrdersDao = new OrdersDao();
+		PaginationParams paginationParams = new PaginationParams();
+		paginationParams.setLoadMoreId(MIDDLE_ORDER_ID);
+		paginationParams.setIndexValue(customerId);
+		OrdersSQLPager OrderssSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
+		return OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
+	}
 
-    /**
-     * @return - json of the first page from messages table
-     * @throws Exception
-     */
-    private static String getFirstMessagesPage() throws Exception {
-        MessagesDao messagesDao = new MessagesDao();
-        PaginationParams paginationParams = new PaginationParams();
-        MessagessSQLPager messagessSQLPager = new MessagessSQLPager(messagesDao::buildEntities, mContext);
-        return messagessSQLPager.getResults(paginationParams, messagesDao, messagesDao.getTableName(), "id");
-    }
+	/**
+	 * @param customerId
+	 * @return - json of the next page of results, paginating by page index.
+	 * @throws Exception
+	 */
+	public static String getNextOrdersPageByPageIndex(long customerId, int pageIndex) throws Exception {
+		OrdersDao OrdersDao = new OrdersDao();
+		PaginationParams paginationParams = new PaginationParams();
+		paginationParams.setPageIndex(pageIndex);
+		paginationParams.setIndexValue(customerId);
+		OrdersSQLPager OrderssSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
+		return OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
+	}
 
-    private static void insertMessages(long userId) throws Exception {
-        for (int i = 0; i < MESSAGES_COUNT; i++) {
-            Message message = new Message(-1, userId, "content", 0, "imageUrl", 1800, System.currentTimeMillis());
-            mMessageDao.insert(mContext, message);
-        }
-    }
+	/**
+	 * @return - json of the new items, starting from MIDDLE_MESSAGE_ID.
+	 * @throws Exception
+	 */
+	public static String getOnlyNewOrdersPage(long customerId, long fromId) throws Exception {
+		OrdersDao OrdersDao = new OrdersDao();
+		PaginationParams paginationParams = new PaginationParams();
+		paginationParams.setHeighestVisibleId(fromId);
+		paginationParams.setIndexValue(customerId);
+		OrdersSQLPager OrderssSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
+		return OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
+	}
 
-    private static long insertUser() throws Exception {
-        User user = new User(0, "first name", "last name", "location", "password", System.currentTimeMillis(), 1, "thumb");
-        Tuple<Integer, PreparedStatement> t = mUserDao.insert(mContext, user);
-        ResultSet rs = t._2.getGeneratedKeys();
-        if (rs.next()) {
-            long userId = rs.getLong(1);
-            return userId;
-        }
+	/**
+	 * @return - json of the first page from Orders table
+	 * @throws Exception
+	 */
+	private static String getFirstOrdersPage(long customerId) throws Exception {
+		OrdersDao OrdersDao = new OrdersDao();
+		PaginationParams paginationParams = new PaginationParams();
+		paginationParams.setIndexValue(customerId);
+		OrdersSQLPager OrderssSQLPager = new OrdersSQLPager(OrdersDao::buildEntities, mContext);
+		return OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id");
+	}
 
-        return -1;
-    }
+	private static void insertOrders(long customerId) throws Exception {
+		for (int i = 0; i < ORDERS_COUNT; i++) {
+			Order message = new Order(-1, customerId, "content", 0, "imageUrl", 1800, System.currentTimeMillis());
+			mOrdersDao.insert(mContext, message);
+		}
+	}
+
+	private static long insertcustomer() throws Exception {
+		Customer customer = new Customer(0, "first name", "last name", "location", "password",
+				System.currentTimeMillis(), 1, "thumb");
+		Tuple<Integer, PreparedStatement> t = mCustomerDao.insert(mContext, customer);
+		ResultSet rs = t._2.getGeneratedKeys();
+		if (rs.next()) {
+			long customerId = rs.getLong(1);
+			return customerId;
+		}
+
+		return -1;
+	}
 
 }

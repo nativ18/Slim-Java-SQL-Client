@@ -9,22 +9,19 @@ import java.util.function.Function;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.google.gson.Gson;
+
+import datamanager.model.BaseEntity;
 import engine.GenericDao;
 import engine.SqlConnector;
-import jdk.nashorn.internal.runtime.GlobalConstants;
-import model.BaseEntity;
 import utils.CheckedParam;
-
 
 public class SQLPager<T extends BaseEntity> implements ISQLPager {
 
 	private static final String TAG = "SQLPager";
-	
-	private static final int DEFAULT_PAGE_SIZE = 20;
-	private static final int PAGE_SIZE = 20;
 
+	private static final int DEFAULT_PAGE_SIZE = 20;
 	private static final long DEFAULT_VALUE = -1;
-	
+
 	private static final String SELECT_FIRST_PAGE = "SELECT * FROM %s WHERE %s=? order by id desc LIMIT %s;";
 	private static final String SELECT_COUNT = "SELECT count(*) FROM %s WHERE %s=?;";
 	private static final String SELECT_MORE_PAGES = "SELECT * FROM %s WHERE %s=? and id<? order by id desc LIMIT %s;";
@@ -43,6 +40,10 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 		this.mResultSetParserFunc = function;
 		this.mContext = context;
 		this.gson = new Gson();
+	}
+
+	public CheckedParam getCheckedParams(ResultSet rs, int pageSize) {
+		return new CheckedParam(rs, pageSize);
 	}
 
 	// Override it in order to create a sorted result set
@@ -98,7 +99,7 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 		if (paginationParams.isGetFirstPageRequest()) {
 			entities = getFirstPage(tableName, indexName, paginationParams.getIndexValue());
 			count = genericDao.getCountForColumn(mContext, indexName, paginationParams.getIndexValue());
-			hasMorePages = entities != null && !entities.isEmpty() && count > PAGE_SIZE;
+			hasMorePages = entities != null && !entities.isEmpty() && count > DEFAULT_PAGE_SIZE;
 		} else if (paginationParams.isGetPageByIndexRequest()) {
 			entities = getPageByIndex(tableName, indexName, paginationParams.getIndexValue(),
 					paginationParams.getPageIndex(), new Object[] { DEFAULT_VALUE });
@@ -113,7 +114,7 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 			hasMorePages = entities != null && !entities.isEmpty() && count > 0;
 		} else if (paginationParams.isGetNewResultsForIdRequest()) {
 			entities = getNewResultsForId(tableName, indexName, paginationParams.getIndexValue(),
-					paginationParams.getUserHeighestVisibleId());
+					paginationParams.getHeighestVisibleId());
 			count = genericDao.getCountForColumn(mContext, indexName, paginationParams.getIndexValue());
 			hasMorePages = false;
 		}
@@ -123,7 +124,7 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 
 	private int selectCountForPaging(int pageIndex, long pkValue, String tableName, String primaryKey)
 			throws SQLException {
-		PreparedStatement preparedStatement = connection
+		java.sql.PreparedStatement preparedStatement = connection
 				.prepareStatement(String.format(SELECT_COUNT, tableName, primaryKey));
 
 		preparedStatement.setObject(1, pkValue);
@@ -143,21 +144,20 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 	private ArrayList<T> getNewResultsForId(String tableName, String fkName, long userId, long visibleHeighestId)
 			throws Exception {
 		String query = getNewResultsForIdQuery(tableName, fkName);
-		PreparedStatement preparedStatement = connection.prepareStatement(query);
+		java.sql.PreparedStatement preparedStatement = connection.prepareStatement(query);
 		preparedStatement.setLong(1, userId);
 		preparedStatement.setLong(2, visibleHeighestId);
 		mCurrentResultSet = preparedStatement.executeQuery();
 		if (mBlockLoadToMem)
 			return null;
 
-		CheckedParam checkedParam = new CheckedParam(mCurrentResultSet, (int) DEFAULT_PAGE_SIZE);
-		return mResultSetParserFunc.apply(checkedParam);
+		return mResultSetParserFunc.apply(getCheckedParams(mCurrentResultSet, (int) DEFAULT_PAGE_SIZE));
 	}
 
 	private ArrayList<T> getNextPage(String tableName, String pkName, long entityId, Object... indexesValues)
 			throws Exception {
 		long heighestId = (long) indexesValues[0];
-		PreparedStatement preparedStatement;
+		java.sql.PreparedStatement preparedStatement;
 
 		if (heighestId == PaginationParams.DEFAULT_HEIGHEST_ID) {
 			String selectFirstPage = getFirstPageQuery(tableName, pkName, entityId);
@@ -173,8 +173,7 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 		if (mBlockLoadToMem)
 			return null;
 
-		CheckedParam checkedParam = new CheckedParam(mCurrentResultSet, (int) DEFAULT_PAGE_SIZE);
-		return mResultSetParserFunc.apply(checkedParam);
+		return mResultSetParserFunc.apply(getCheckedParams(mCurrentResultSet, (int) DEFAULT_PAGE_SIZE));
 	}
 
 	private ArrayList<T> getPageByIndex(String tableName, String fkName, long entityId, int pageIndex,
@@ -192,7 +191,7 @@ public class SQLPager<T extends BaseEntity> implements ISQLPager {
 				if (!mCurrentResultSet.next())
 					break;
 
-			page = mResultSetParserFunc.apply(new CheckedParam(mCurrentResultSet, DEFAULT_PAGE_SIZE));
+			page = mResultSetParserFunc.apply(getCheckedParams(mCurrentResultSet, (int) DEFAULT_PAGE_SIZE));
 		}
 		resetState();
 		return page;
