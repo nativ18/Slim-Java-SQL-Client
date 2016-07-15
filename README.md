@@ -2,18 +2,46 @@
 GenericDao is a java library, writen in Java 8 and under APACHE licence.
 
 # Introduction
-Its main goal is to provide automatic DAO abilities over POJO entities by simply extending 
+
+The main goal is to provide automatic DAO abilities over POJO entities by simply extending 
 the GenericDao superclass. 
-The library uses Annotations and Reflections and so do not recommend for Android developer since these 2 patterns works 
-really slow on Android.
 
-Some of the out of the box method you'll get are:
-    select(Long id);
-    selectForIndex(Long id, String indexName, Object indexValue);
-    insert(BaseEntity entity);
-    
-    // TO BE CONTINUE..
+# Features
 
-# Usage example
+ 1. Out of the box SQL CRUD(create, read, update, delete) by easily extending class GenericDao.
 
-# Still to come 
+Example: 
+
+    public class OrdersDao extends GenericDao<Order> {
+    	public static final String TABLE_NAME = "orders";
+    	public OrdersDao() throws Exception {
+    		super(Order.class);
+    	}
+    	@Override
+    	public String getTableName() {
+    		return TABLE_NAME;
+    	}
+    }
+
+ 2. Pagination - selecting pages of records using one line of code. 
+    - by page index.
+    - from record id.
+    - by record id for which you would like to paginate only new records.
+
+Example: 
+
+    // "id" is the column on which you want to paginate.
+    OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id")
+
+3. Very easy for maintenance and extensions.
+
+# Running it
+Important: Current MySql Connector is implemented using JDBC. You'll to update the environment EnvConstants with your sql server name, password and username.
+
+This library is a demo for Customers and Orders Model. 
+In order to run it make sure that a corresponding Model exists(The fields' names can be taken for Order and Customer classes).   
+
+Final note:
+
+The library uses Annotations and Reflections and so do not recommend for Android applications usage since these patterns works 
+slow on Android.
