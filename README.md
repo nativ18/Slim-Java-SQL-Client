@@ -30,7 +30,12 @@ Example:
 
 Example: 
 
-    // "id" is the column on which you want to paginate.
+    paginationParams.setPageIndex(int pageIndex); // quering by page index
+    - or -
+    paginationParams.setHeighestThen(int value);  // quering for heigher values then value
+    - or -
+    paginationParams.setIndexValue(int indexValue); // quering page for indexValue
+    // "id" is the column on which this example paginates.
     OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id")
 
 3. Very easy for maintenance and extensions.
