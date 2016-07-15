@@ -8,7 +8,7 @@ the GenericDao superclass.
 
 # Features
 
-1. Out of the box SQL CRUD(create, read, update, delete) by easily extending class GenericDao.
+*   Out of the box SQL CRUD(create, read, update, delete) by easily extending class GenericDao.
 
 Example: 
 
@@ -23,7 +23,7 @@ Example:
     	}
     }
 
-2. Pagination - selecting pages of records using one line of code. 
+*   Pagination - selecting pages of records using one line of code. 
     - by page index.
     - from record id.
     - by record id for which you would like to paginate only new records.
@@ -38,7 +38,7 @@ Example:
     // "id" is the column on which this example paginates.
     OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id")
 
-3. Very easy for maintenance and extensions.
+*   Very easy for maintenance and extensions.
 
 # Running it
 Important: Current MySql Connector is implemented using JDBC. You'll to update the environment EnvConstants with your sql server name, password and username.
