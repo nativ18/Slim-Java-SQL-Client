@@ -41,10 +41,10 @@ Example:
 *   Very easy for maintenance and extensions.
 
 # Running it
-Important: Current MySql Connector is implemented using JDBC. You'll to update the environment EnvConstants with your sql server name, password and username.
+Current MySql Connector is implemented using JDBC. You'll need to update the environment fields in class EnvConstants with your sql server name, password and username.
 
 This library is a demo for Customers and Orders Model. 
-In order to run it make sure that a corresponding Model exists(The fields' names can be taken for Order and Customer classes).   
+In order to run it make sure that a corresponding Model exists(The fields' names can be taken from Order and Customer classes).   
 
 Final note:
 
