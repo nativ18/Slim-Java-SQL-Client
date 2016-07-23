@@ -10,7 +10,7 @@ the GenericDao superclass.
 
 *   Out of the box <b>SQL CRUD(create, read, update, delete and many more developed queries)</b> by easily extending class GenericDao.
 
-Example: 
+<B>Example:</b> 
 
     public class OrdersDao extends GenericDao<Order> {
     	public static final String TABLE_NAME = "orders";
@@ -28,7 +28,7 @@ Example:
     - from record id.
     - by record id for which you would like to paginate only new records.
 
-Example: 
+<b>Example:</b>
 
     paginationParams.setPageIndex(int pageIndex); // quering by page index
     - or -
@@ -46,7 +46,7 @@ Current MySql Connector is implemented using <b>JDBC</b>. You'll need to update 
 This library is a demo for Customers and Orders Model. 
 In order to run it make sure that a corresponding Model exists(The fields' names can be taken from Order and Customer classes).   
 
-Final note:
+<b>Final note:</b>
 
 The library uses Annotations and Reflections and so do not recommend for Android applications usage since these patterns works 
 slow on Android.
