@@ -8,7 +8,7 @@ the GenericDao superclass.
 
 # Features
 
-*   Out of the box SQL CRUD(create, read, update, delete) by easily extending class GenericDao.
+*   Out of the box <b>SQL CRUD(create, read, update, delete)</b> by easily extending class GenericDao.
 
 Example: 
 
@@ -23,7 +23,7 @@ Example:
     	}
     }
 
-*   Pagination - selecting pages of records using one line of code. 
+*   <b>Pagination</b> - selecting pages of records using one line of code. 
     - by page index.
     - from record id.
     - by record id for which you would like to paginate only new records.
