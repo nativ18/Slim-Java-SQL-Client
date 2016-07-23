@@ -8,7 +8,7 @@ the GenericDao superclass.
 
 # Features
 
-*   Out of the box <b>SQL CRUD(create, read, update, delete)</b> by easily extending class GenericDao.
+*   Out of the box <b>SQL CRUD(create, read, update, delete and many more developed queries)</b> by easily extending class GenericDao.
 
 Example: 
 
