@@ -32,7 +32,7 @@ the GenericDao superclass.
 
     paginationParams.setPageIndex(int pageIndex); // quering by page index
     - or -
-    paginationParams.setHeighestThen(int value);  // quering for heigher values then value
+    paginationParams.setHeighestThen(int value);  // quering for heigher values than value
     - or -
     paginationParams.setIndexValue(int indexValue); // quering page for indexValue
     // "id" is the column on which this example paginates.
@@ -48,5 +48,4 @@ In order to run it make sure that a corresponding Model exists(The fields' names
 
 <b>Final note:</b>
 
-The library uses Annotations and Reflections and so do not recommend for Android applications usage since these patterns works 
-slow on Android.
+The library uses Annotations and Reflections and so do not recommended for Android applications usage since these patterns perform slow on Android.
