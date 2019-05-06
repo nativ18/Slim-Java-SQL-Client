@@ -1,5 +1,5 @@
-# GenericDao
-GenericDao is a java library, writen in Java 8 and under APACHE licence.
+# SQL-SDK-Slim-For-Java
+SQL-SDK-Slim-For-Java is a java library, writen in Java 8 and under APACHE licence.
 
 # Introduction
 
