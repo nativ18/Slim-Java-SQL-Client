@@ -1,5 +1,5 @@
-# SQL-SDK-Slim-For-Java
-SQL-SDK-Slim-For-Java is a java library, writen in Java 8 and under APACHE licence.
+# Slim SQL Client
+SQL SQL Client is a java library, writen in Java 8 and under APACHE licence.
 
 # Introduction
 
@@ -8,7 +8,7 @@ the GenericDao superclass.
 
 # Features
 
-*   Out of the box <b>SQL CRUD(create, read, update, delete and many more developed queries)</b> by easily extending class GenericDao.
+*   Out of the box <b>SQL CRUD(create, read, update, delete and many more queries)</b> by easily extending class GenericDao.
 
 <B>Example:</b> 
 
