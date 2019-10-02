@@ -32,11 +32,13 @@ the GenericDao superclass.
 
     paginationParams.setPageIndex(int pageIndex); // quering by page index
     - or -
-    paginationParams.setHeighestThen(int value);  // quering for heigher values than value
+    paginationParams.setHeighestThen(int entityId);  // quering for entities newer than entityId. Can be used to show "x new items" bar.
     - or -
-    paginationParams.setIndexValue(int indexValue); // quering page for indexValue
+    paginationParams.setEntityHightId(int entityId); // quering a page down from entity with id entityId. Can be used to load older pages when user scrolls down.
     // "id" is the column on which this example paginates.
     OrderssSQLPager.getResults(paginationParams, OrdersDao, OrdersDao.getTableName(), "id")
+
+Page size is easily configurable.
 
 *   Very easy for maintenance and extensions.
 
