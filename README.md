@@ -52,6 +52,7 @@ In order to run it make sure that a corresponding Model exists(The fields' names
 
 The library uses Annotations and Reflections and so do not recommended for Android applications usage since these patterns perform slow on Android.
 
-TODO:
+<B>TODO</B>:
 1. Enable creating db scheme from entities.
-2. Observables queries.
+2. Related to (1), set fk and pk and index in annotation.
+3. Observables queries.
